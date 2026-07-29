@@ -15,8 +15,8 @@ func (h *TablesHeader) computeIndexes() {
 		h.Tables[TypeSpec],
 	)
 	hasConstant := compositeIndexSize(
-		h.Tables[TypeDef],
-		h.Tables[TypeRef],
+		h.Tables[Field],
+		h.Tables[Param],
 		h.Tables[Property],
 	)
 	hasCustomAttribute := compositeIndexSize(
