@@ -272,7 +272,7 @@ package types
 import (
 	"fmt"
 
-	"github.com/tdakkota/win32metadata/md"
+	"github.com/TotallyGamerJet/win32metadata/md"
 )
 
 var _ fmt.Stringer

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/tdakkota/win32metadata/md"
+	"github.com/TotallyGamerJet/win32metadata/md"
 )
 
 // Context is a simple helper for accessing file heaps and tables.

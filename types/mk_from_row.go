@@ -198,7 +198,7 @@ package types
 import (
 	"fmt"
 
-	"github.com/tdakkota/win32metadata/md"
+	"github.com/TotallyGamerJet/win32metadata/md"
 )
 
 {{ range $target := .Targets -}}
@@ -268,7 +268,7 @@ func (f *{{ $.Name }}) Resolve{{ $column.Name }}(c *Context) ({{ template "resol
 `
 
 func run(ctx context.Context) error {
-	const pkgName = "github.com/tdakkota/win32metadata/types"
+	const pkgName = "github.com/TotallyGamerJet/win32metadata/types"
 	pkg, err := loadPackage(ctx, pkgName)
 	if err != nil {
 		return err

@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/tdakkota/win32metadata/md"
-	"github.com/tdakkota/win32metadata/types"
+	"github.com/TotallyGamerJet/win32metadata/md"
+	"github.com/TotallyGamerJet/win32metadata/types"
 )
 
 func findMethod(c *types.Context, typeNamespace, methodName string) (uint32, types.MethodDef, error) {

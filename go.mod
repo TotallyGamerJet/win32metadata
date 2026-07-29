@@ -1,4 +1,4 @@
-module github.com/tdakkota/win32metadata
+module github.com/TotallyGamerJet/win32metadata
 
 go 1.16
 

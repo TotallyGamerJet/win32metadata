@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/tdakkota/win32metadata/types"
+	"github.com/TotallyGamerJet/win32metadata/types"
 )
 
 func run() error {

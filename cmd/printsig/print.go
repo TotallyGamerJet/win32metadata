@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tdakkota/win32metadata/md"
-	"github.com/tdakkota/win32metadata/types"
+	"github.com/TotallyGamerJet/win32metadata/md"
+	"github.com/TotallyGamerJet/win32metadata/types"
 )
 
 func queueTypeDefs(

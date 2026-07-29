@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/tdakkota/win32metadata/md"
+	"github.com/TotallyGamerJet/win32metadata/md"
 )
 
 func TestCreateIndex(t *testing.T) {
