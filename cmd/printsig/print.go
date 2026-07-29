@@ -253,11 +253,11 @@ func printMethod(
 
 	log := strings.Builder{}
 	if dllImport.DLLName != "" {
-		log.WriteString(fmt.Sprintf("// var proc%s = NewLazySystemDLL(%q).NewProc(%q)\n\n",
+		fmt.Fprintf(&log, "// var proc%s = NewLazySystemDLL(%q).NewProc(%q)\n\n",
 			def.Name,
 			dllImport.DLLName+".dll",
 			dllImport.RoutineName,
-		))
+		)
 	}
 	log.WriteString("func ")
 	log.WriteString(def.Name)

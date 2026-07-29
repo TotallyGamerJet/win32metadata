@@ -49,6 +49,14 @@ linters:
       line-length: 140
     misspell:
       locale: US
+    depguard:
+      rules:
+        main:
+          list-mode: original
+          allow:
+            - $gostd
+            - github.com/TotallyGamerJet/win32metadat
+            - github.com/stretchr/testify
   exclusions:
     generated: lax
     rules:

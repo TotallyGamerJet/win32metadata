@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math"
 	"strings"
 )
 
@@ -24,6 +25,16 @@ func (m *Metadata) findStreamHeader(name string) (StreamHeader, bool) {
 		}
 	}
 	return StreamHeader{}, false
+}
+
+// heapOffset returns the absolute offset of idx in the given heap.
+func heapOffset(heap StreamHeader, idx uint64) (int64, error) {
+	offset := uint64(heap.Offset) + idx
+	if offset > math.MaxInt64 {
+		return 0, fmt.Errorf("%s heap offset %d is out of bounds", heap.Name, offset)
+	}
+
+	return int64(offset), nil
 }
 
 // StreamByName finds and returns metadata section reader by name.
@@ -62,10 +73,14 @@ func (m *Metadata) ReadString(idx uint64) (string, error) {
 		return "", fmt.Errorf("string heap stream not found")
 	}
 
+	offset, err := heapOffset(heap, idx)
+	if err != nil {
+		return "", err
+	}
+
 	var (
-		offset = int64(heap.Offset) + int64(idx)
-		one    [1]byte
-		buf    strings.Builder
+		one [1]byte
+		buf strings.Builder
 	)
 	for {
 		_, err := m.r.ReadAt(one[:], offset)
@@ -93,17 +108,20 @@ func (m *Metadata) ReadBlob(idx uint64) ([]byte, error) {
 	if !ok {
 		return nil, fmt.Errorf("blob heap stream not found")
 	}
+	offset, err := heapOffset(heap, idx)
+	if err != nil {
+		return nil, err
+	}
+
 	var (
-		offset = int64(heap.Offset) + int64(idx)
-		buf    = make([]byte, 4)
+		buf = make([]byte, 4)
 		// Size of blob data
 		blobSize int
 		// Size of length in bytes
 		lenSize int64
 	)
 
-	_, err := m.r.ReadAt(buf, offset)
-	if err != nil {
+	if _, err := m.r.ReadAt(buf, offset); err != nil {
 		return nil, err
 	}
 

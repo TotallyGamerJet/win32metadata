@@ -104,8 +104,13 @@ func (s *SignatureReader) elementType(c *Context) (ElementType, error) {
 		return t, nil
 	}
 
+	kind, ok := elementTypeKind(value)
+	if !ok {
+		return t, fmt.Errorf("unexpected element type %#x", value)
+	}
+
 	// TODO(tdakkota): complete implementation
-	switch ElementTypeKind(value) {
+	switch kind {
 	case ELEMENT_TYPE_VALUETYPE, ELEMENT_TYPE_CLASS:
 		r, ok := s.Read()
 		if !ok {

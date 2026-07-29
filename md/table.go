@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math"
 )
 
 // TableType is a metadata table type.
@@ -127,10 +128,16 @@ func (t Table) Find(row, column uint32) (uint32, error) {
 		return 0, fmt.Errorf("row index %d is out of bounds (%d)", row, t.RowCount)
 	}
 
-	return uint32(t.Offset) + row*t.RowSize + c.Offset, nil
+	offset := t.Offset + int64(row)*int64(t.RowSize) + int64(c.Offset)
+	if offset < 0 || offset > math.MaxUint32 {
+		return 0, fmt.Errorf("offset %d of column %d in row %d is out of bounds", offset, column, row)
+	}
+
+	return uint32(offset), nil
 }
 
-// Uint32 returns numeric value truncated to uint32.
+// Uint32 returns numeric value as uint32.
+// It returns an error if the value does not fit into uint32.
 func (t Table) Uint32(r io.ReaderAt, row, column uint32) (uint32, error) {
 	offset, err := t.Find(row, column)
 	if err != nil {
@@ -150,7 +157,12 @@ func (t Table) Uint32(r io.ReaderAt, row, column uint32) (uint32, error) {
 	case 4:
 		return binary.LittleEndian.Uint32(buf), nil
 	default:
-		return uint32(binary.LittleEndian.Uint64(buf)), nil
+		v := binary.LittleEndian.Uint64(buf)
+		if v > math.MaxUint32 {
+			return 0, fmt.Errorf("value %d of column %d in row %d does not fit into uint32", v, column, row)
+		}
+
+		return uint32(v), nil
 	}
 }
 

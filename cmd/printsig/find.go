@@ -1,3 +1,4 @@
+// Package main implements a tool to print the signature of a method.
 package main
 
 import (

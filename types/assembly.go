@@ -1,3 +1,4 @@
+// Package types contains win32metadata structures and decoding helpers.
 package types
 
 // Assembly is a II.22.2 Assembly representation.

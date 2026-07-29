@@ -1,7 +1,19 @@
 package types
 
+import "math"
+
 // ElementTypeKind is a II.23.1.16 Element types used in signatures representation kind.
 type ElementTypeKind uint16
+
+// elementTypeKind converts a raw signature value to ElementTypeKind.
+// ok is false if the value is too big to be an element type.
+func elementTypeKind(value uint32) (kind ElementTypeKind, ok bool) {
+	if value > math.MaxUint16 {
+		return ELEMENT_TYPE_END, false
+	}
+
+	return ElementTypeKind(value), true
+}
 
 //go:generate go run golang.org/x/tools/cmd/stringer -type=ElementTypeKind
 
@@ -159,7 +171,7 @@ func (e *ElementType) FromCode(code uint32) bool {
 	case 0x1c:
 		e.Kind = ELEMENT_TYPE_OBJECT
 	default:
-		e.Kind = ElementTypeKind(code)
+		e.Kind, _ = elementTypeKind(code)
 		return false
 	}
 
