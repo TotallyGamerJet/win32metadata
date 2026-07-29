@@ -1,0 +1,301 @@
+//+build ignore
+
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"go/format"
+	"io"
+	"log"
+	"os"
+	"text/template"
+)
+
+type tag struct {
+	Name  string
+	Value int
+}
+
+type compositeIndex struct {
+	Name string
+	Bits int
+	Tags []tag
+}
+
+const indexTemplate = `
+// {{ .Name }} represents composite index one of
+//
+{{- range $tag := .Tags }}
+// 	{{ $tag.Name }}
+{{- end }}
+//
+// table.
+type {{ .Name }} uint32
+
+// Create{{ .Name }} creates new composite index from given tag and table index.
+func Create{{ .Name }}(tt md.TableType, idx uint32) {{ .Name }} {
+	var t {{ .Name }}
+	t.Set(tt, idx)
+	return t
+}
+
+// Tag returns {{ .Name }} tag.
+// Tag table:
+//
+{{- range $tag := .Tags }}
+// 	{{ $tag.Name }} = {{ $tag.Value }}
+{{- end }}
+//
+func (t {{ .Name }}) Tag() uint32 {
+	return uint32(t & ((1 << {{ .Bits }}) - 1))
+}
+
+// Set sets {{ .Name }} tag and index.
+func (t *{{ .Name }}) Set(tt md.TableType, idx uint32) {
+	var tag uint32
+	switch tt {
+	{{- range $tag := .Tags }}
+	{{- if (eq $tag.Name "Not used") }}
+	// Skip {{ $tag.Value }} "{{ $tag.Name }}", means tag is unused yet {{ else }}
+	{{- if (eq $tag.Name "Permission") }}
+	// Skip {{ $tag.Value }} "{{ $tag.Name }}", there is not such table
+	{{- else }}
+	case md.{{ $tag.Name }}:
+		tag = {{ $tag.Value }}
+	{{- end }}
+	{{- end }}
+
+	{{- end }}
+	default:
+		panic(fmt.Sprintf("unexpected table type %v", tt))
+	}
+	val := ((idx + 1) << {{ .Bits }}) | tag
+	*t = {{ .Name }}(val)
+}
+
+// Table returns associated TableType using tag.
+func (t {{ .Name }}) Table() (md.TableType, bool) {
+	switch t.Tag() {
+	{{- range $tag := .Tags }}
+	{{- if (eq $tag.Name "Not used") }}
+	// Skip {{ $tag.Value }} "{{ $tag.Name }}", means tag is unused yet {{ else }}
+	{{- if (eq $tag.Name "Permission") }}
+	// Skip {{ $tag.Value }} "{{ $tag.Name }}", there is not such table
+	{{- else }}
+	case {{ $tag.Value }}:
+		return md.{{ $tag.Name }}, true
+	{{- end }}
+	{{- end }}
+
+	{{- end }}
+	default:
+		return 0, false
+	}
+}
+
+// Row creates new Row using given Context and this index.
+func (t {{ .Name }}) Row(c *Context) (Row, bool) {
+	table, ok := t.Table()
+	if !ok {
+		var zero Row
+		return zero, false
+	}
+
+	return c.Table(table).Row(t.TableIndex()), true
+}
+
+// TableIndex returns {{ .Name }} index.
+func (t {{ .Name }}) TableIndex() uint32 {
+	return uint32((t >> {{ .Bits }}) - 1)
+}
+
+// String implements fmt.Stringer method.
+func (t {{ .Name }}) String() string {
+	switch t.Tag() {
+	{{- range $tag := .Tags }}
+	case {{ $tag.Value }}:
+		return fmt.Sprintf("{{ $tag.Name }}(%d)", t.TableIndex())
+	{{- end }}
+	default:
+		return "unknown"
+	}
+}
+`
+
+func run() error {
+	out := &bytes.Buffer{}
+
+	t := template.Must(template.New("gen").Parse(indexTemplate))
+	indexes := []compositeIndex{
+		{
+			Name: "TypeDefOrRef",
+			Bits: 2,
+			Tags: []tag{
+				{"TypeDef", 0},
+				{"TypeRef", 1},
+				{"TypeSpec", 2},
+			},
+		},
+		{
+			Name: "HasConstant",
+			Bits: 2,
+			Tags: []tag{
+				{"Field", 0},
+				{"Param", 1},
+				{"Property", 2},
+			},
+		},
+		{
+			Name: "HasCustomAttribute",
+			Bits: 5,
+			Tags: []tag{
+				{"MethodDef", 0},
+				{"Field", 1},
+				{"TypeRef", 2},
+				{"TypeDef", 3},
+				{"Param", 4},
+				{"InterfaceImpl", 5},
+				{"MemberRef", 6},
+				{"Module", 7},
+				{"Permission", 8},
+				{"Property", 9},
+				{"Event", 10},
+				{"StandAloneSig", 11},
+				{"ModuleRef", 12},
+				{"TypeSpec", 13},
+				{"Assembly", 14},
+				{"AssemblyRef", 15},
+				{"File", 16},
+				{"ExportedType", 17},
+				{"ManifestResource", 18},
+				{"GenericParam", 19},
+				{"GenericParamConstraint", 20},
+				{"MethodSpec", 21},
+			},
+		},
+		{
+			Name: "HasFieldMarshall",
+			Bits: 1,
+			Tags: []tag{
+				{"Field", 0},
+				{"Param", 1},
+			},
+		},
+		{
+			Name: "HasDeclSecurity",
+			Bits: 2,
+			Tags: []tag{
+				{"TypeDef", 0},
+				{"MethodDef", 1},
+				{"Assembly", 2},
+			},
+		},
+		{
+			Name: "MemberRefParent",
+			Bits: 3,
+			Tags: []tag{
+				{"TypeDef", 0},
+				{"TypeRef", 1},
+				{"ModuleRef", 2},
+				{"MethodDef", 3},
+				{"TypeSpec", 4},
+			},
+		},
+		{
+			Name: "HasSemantics",
+			Bits: 1,
+			Tags: []tag{
+				{"Event", 0},
+				{"Property", 1},
+			},
+		},
+		{
+			Name: "MethodDefOrRef",
+			Bits: 1,
+			Tags: []tag{
+				{"MethodDef", 0},
+				{"MemberRef", 1},
+			},
+		},
+		{
+			Name: "MemberForwarded",
+			Bits: 1,
+			Tags: []tag{
+				{"Field", 0},
+				{"MethodDef", 1},
+			},
+		},
+		{
+			Name: "Implementation",
+			Bits: 2,
+			Tags: []tag{
+				{"File", 0},
+				{"AssemblyRef", 1},
+				{"ExportedType", 2},
+			},
+		},
+		{
+			Name: "CustomAttributeType",
+			Bits: 3,
+			Tags: []tag{
+				{"Not used", 0},
+				{"Not used", 1},
+				{"MethodDef", 2},
+				{"MemberRef", 3},
+				{"Not used", 4},
+			},
+		},
+		{
+			Name: "ResolutionScope",
+			Bits: 2,
+			Tags: []tag{
+				{"Module", 0},
+				{"ModuleRef", 1},
+				{"AssemblyRef", 2},
+				{"TypeRef", 3},
+			},
+		},
+		{
+			Name: "TypeOrMethodDef",
+			Bits: 1,
+			Tags: []tag{
+				{"TypeDef", 0},
+				{"MethodDef", 1},
+			},
+		},
+	}
+
+	if _, err := io.WriteString(out, `// Code generated by mk_composite_index.go, DO NOT EDIT.
+package types
+
+import (
+	"fmt"
+
+	"github.com/tdakkota/win32metadata/md"
+)
+
+var _ fmt.Stringer
+`); err != nil {
+		return fmt.Errorf("write header: %w", err)
+	}
+	for _, index := range indexes {
+		if err := t.Execute(out, index); err != nil {
+			return fmt.Errorf("generate %q: %w", index.Name, err)
+		}
+	}
+
+	formatted, err := format.Source(out.Bytes())
+	if err != nil {
+		io.Copy(os.Stderr, out)
+		return fmt.Errorf("format: %w", err)
+	}
+
+	return os.WriteFile("composite_index.gen.go", formatted, 0o600)
+}
+
+func main() {
+	if err := run(); err != nil {
+		log.Fatalln(err)
+	}
+}
