@@ -15,7 +15,7 @@ func elementTypeKind(value uint32) (kind ElementTypeKind, ok bool) {
 	return ElementTypeKind(value), true
 }
 
-//go:generate go run golang.org/x/tools/cmd/stringer -type=ElementTypeKind
+//go:generate go run golang.org/x/tools/cmd/stringer@v0.48.0 -type=ElementTypeKind
 
 const (
 	// ELEMENT_TYPE_END constant.

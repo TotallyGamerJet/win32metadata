@@ -67,7 +67,9 @@ func generateList() map[string]struct{} {
 
 func loadPackage(ctx context.Context, pkgName string) (*packages.Package, error) {
 	pkgs, err := packages.Load(&packages.Config{
-		Mode:    packages.NeedSyntax,
+		// NeedCompiledGoFiles is required for NeedSyntax to populate Syntax:
+		// without it the loader has no file list to parse and silently yields none.
+		Mode:    packages.NeedSyntax | packages.NeedCompiledGoFiles,
 		Context: ctx,
 		Env:     os.Environ(),
 		ParseFile: func(fset *token.FileSet, filename string, src []byte) (*ast.File, error) {

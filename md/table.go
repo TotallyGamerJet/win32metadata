@@ -12,7 +12,7 @@ import (
 // See II.22.1 Metadata validation rules.
 type TableType int
 
-//go:generate go run golang.org/x/tools/cmd/stringer -type=TableType
+//go:generate go run golang.org/x/tools/cmd/stringer@v0.48.0 -type=TableType
 
 const (
 	// Module table type.
